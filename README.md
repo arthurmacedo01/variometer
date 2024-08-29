@@ -1,6 +1,6 @@
-# Altitude Monitoring and Alert System using ESP32 and BMX280 Sensor
+# Altitude Monitoring and Alert System with BLE Support using ESP32 and BMX280 Sensor
 
-This project implements an altitude monitoring and alert system using an ESP32 microcontroller, a BMX280 sensor (for pressure and temperature measurements), and a buzzer for auditory alerts. The system utilizes a Kalman Filter to estimate altitude, velocity, and acceleration from sensor readings and provides real-time feedback through auditory cues.
+This project implements an altitude monitoring and alert system using an ESP32 microcontroller, a BMX280 sensor (for pressure and temperature measurements), and a buzzer for auditory alerts. The system utilizes a Kalman Filter to estimate altitude, velocity, and acceleration from sensor readings and provides real-time feedback through auditory cues. Additionally, it supports Bluetooth Low Energy (BLE) communication, allowing the system to transmit pressure and vertical speed data in LK8EX1 format, enabling integration with various flight instruments and mobile applications.
 
 ## Table of Contents
 
