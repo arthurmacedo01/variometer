@@ -190,6 +190,12 @@ void buzzer_task(void *pvParameters)
 
 void app_main(void)
 {
+    // Initialize the blue LED GPIO
+    gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);
+
+    // Turn on the blue LED at the beginning
+    gpio_set_level(GPIO_NUM_2, 1);
+
     // Initialize I2C and the BMX280 sensor
     i2c_config_t i2c_cfg = {
         .mode = I2C_MODE_MASTER,
@@ -237,7 +243,6 @@ void app_main(void)
     xTaskCreate(sensor_task, "sensor_task", 4096, NULL, 5, NULL);
     xTaskCreate(buzzer_task, "buzzer_task", 4096, NULL, 5, NULL);
 
-
     // Buzzer on for 1000ms
     ledc_set_freq(LEDC_HIGH_SPEED_MODE, LEDC_TIMER_0, 2000);
     ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL, 4000);
@@ -245,4 +250,7 @@ void app_main(void)
     vTaskDelay(1000 / portTICK_PERIOD_MS);     
     ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL, 0);
     ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL);
+
+    // Turn off the blue LED at the end
+    gpio_set_level(GPIO_NUM_2, 0);
 }

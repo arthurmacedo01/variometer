@@ -113,3 +113,7 @@
 4919	5539	1724955078724519926	/home/arthur/Documents/Projects/esp32/variometer_ble/build/bootloader/.bin_timestamp	9eb9c08d5b5e79b
 5539	5673	0	esp-idf/esptool_py/CMakeFiles/bootloader_check_size	95012695f995ddf4
 5539	5673	0	/home/arthur/Documents/Projects/esp32/variometer_ble/build/bootloader/esp-idf/esptool_py/CMakeFiles/bootloader_check_size	95012695f995ddf4
+8	52	0	esp-idf/esptool_py/CMakeFiles/bootloader_check_size	95012695f995ddf4
+8	52	0	/home/arthur/Documents/Projects/esp32/variometer_ble/build/bootloader/esp-idf/esptool_py/CMakeFiles/bootloader_check_size	95012695f995ddf4
+8	53	0	esp-idf/esptool_py/CMakeFiles/bootloader_check_size	95012695f995ddf4
+8	53	0	/home/arthur/Documents/Projects/esp32/variometer_ble/build/bootloader/esp-idf/esptool_py/CMakeFiles/bootloader_check_size	95012695f995ddf4
