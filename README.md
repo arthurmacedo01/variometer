@@ -1,106 +1,210 @@
-| Supported Targets | ESP32 | ESP32-C2 | ESP32-C3 | ESP32-C5 | ESP32-C6 | ESP32-H2 | ESP32-S3 |
-| ----------------- | ----- | -------- | -------- | -------- | -------- | -------- | -------- |
+# Altitude Monitoring and Alert System using ESP32 and BMX280 Sensor
 
-# ESP-IDF Gatt Server Example
+This project implements an altitude monitoring and alert system using an ESP32 microcontroller, a BMX280 sensor (for pressure and temperature measurements), and a buzzer for auditory alerts. The system utilizes a Kalman Filter to estimate altitude, velocity, and acceleration from sensor readings and provides real-time feedback through auditory cues.
 
-This example shows how create a GATT service by adding attributes one by one. However, this method is defined by Bluedroid and is difficult for users to use.
+## Table of Contents
 
-Hence, we also allow users to create a GATT service with an attribute table, which releases the user from adding attributes one by one. And it is recommended for users to use. For more information about this method, please refer to [gatt_server_service_table_demo](../gatt_server_service_table).
+- [Overview](#overview)
+- [Features](#features)
+- [Hardware Requirements](#hardware-requirements)
+- [Software Requirements](#software-requirements)
+- [Circuit Diagram](#circuit-diagram)
+- [Setup and Installation](#setup-and-installation)
+- [Kalman Filter Explanation](#kalman-filter-explanation)
+- [Usage](#usage)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
+- [Acknowledgements](#acknowledgements)
 
-This demo creates GATT a service and then starts advertising, waiting to be connected to a GATT client.
+---
 
-To test this demo, we can run the [gatt_client_demo](../gatt_client), which can scan for and connect to this demo automatically. They will start exchanging data once the GATT client has enabled the notification function of the GATT server.
+## Overview
 
-Please, check this [tutorial](tutorial/Gatt_Server_Example_Walkthrough.md) for more information about this example.
+The **Altitude Monitoring and Alert System** is designed to provide precise altitude measurements and corresponding alerts based on vertical velocity. It is ideal for applications such as drone flight control, hiking altimeters, or any system requiring accurate altitude and movement tracking.
 
-## How to Use Example
+The system reads pressure data from the BMX280 sensor, converts it to altitude, and processes it through a Kalman Filter to obtain smooth and accurate estimates of altitude, velocity, and acceleration. Based on the estimated velocity, the buzzer produces sound signals with varying frequencies, providing immediate auditory feedback on the vertical movement.
 
-Before project configuration and build, be sure to set the correct chip target using:
+---
+
+## Features
+
+- **Accurate Altitude Measurement**: Utilizes the BMX280 sensor for precise pressure and temperature readings.
+- **Kalman Filter Implementation**: Provides smooth and reliable estimates of altitude, velocity, and acceleration.
+- **Real-time Auditory Alerts**: Buzzer frequency changes according to the vertical velocity, indicating ascent or descent.
+- **Configurable Parameters**: Sampling time, noise covariances, and sensitivity can be adjusted as needed.
+- **Modular Code Structure**: Easy to understand and modify for custom applications.
+- **FreeRTOS Support**: Tasks are managed efficiently using FreeRTOS, ensuring real-time performance.
+
+---
+
+## Hardware Requirements
+
+- **ESP32 Development Board**: Any standard ESP32 board will suffice.
+- **BMX280 Sensor Module**: For measuring pressure and temperature.
+- **Buzzer**: A piezoelectric buzzer for auditory alerts.
+- **Connecting Wires**: For establishing connections between components.
+- **Breadboard or PCB**: Optional, for organizing and securing connections.
+- **Power Supply**: USB cable or appropriate power source for the ESP32 board.
+
+### Pin Connections
+
+| ESP32 GPIO Pin | Component     | Component Pin |
+|----------------|---------------|---------------|
+| GPIO 21        | BMX280 Sensor | SDA           |
+| GPIO 22        | BMX280 Sensor | SCL           |
+| GPIO 25        | Buzzer        | Signal (I/O)  |
+| GND            | BMX280 Sensor | GND           |
+| 3.3V           | BMX280 Sensor | VCC           |
+| 3.3V           | Buzzer        | Power (+)     |
+| GND            | Buzzer        | Ground (-)    |
+
+---
+
+## Software Requirements
+
+- **ESP-IDF (Espressif IoT Development Framework)**: Version 4.x or later.
+- **Python 3.x**: For ESP-IDF and related tools.
+- **Git**: For version control and code management.
+- **Serial Monitor**: Such as `minicom`, `putty`, or the built-in ESP-IDF monitor tool.
+
+### Libraries and Dependencies
+
+- **FreeRTOS**: Included in ESP-IDF.
+- **LEDC Driver**: For PWM control of the buzzer (included in ESP-IDF).
+- **I2C Driver**: For communication with the BMX280 sensor (included in ESP-IDF).
+- **BMX280 Driver**: Ensure you have the appropriate driver/library for the BMX280 sensor compatible with ESP-IDF.
+
+---
+
+## Circuit Diagram
+
+Below is a simplified circuit diagram illustrating the connections between the ESP32, BMX280 sensor, and the buzzer.
+
+       +-----------------------+
+       |        ESP32          |
+       |                       |
+       |   GPIO 25 (BUZZER) ---+-----+
+       |   GPIO 22 (SCL) ------+---+ | 
+       |   GPIO 21 (SDA) ------+-+ | | 
+       |                       | | | |
+       +-----------------------+ | | |
+                                 | | |
+      +----------------+         | | |
+      |   BMX280       |         | | |
+      |                |         | | |
+      |   SDA ---------+---------+ | |
+      |   SCL ---------------------+ |
+      |   VCC ---------3.3V          |
+      |   GND ---------GND           |
+      +----------------+             |
+                                     |
+      +--------+                     |
+      | Buzzer |                     |
+      |        |                     |
+      |  + ----+--- 3.3V             |
+      |  - ----+--- GND              |   
+      |  I/O --+--- GPIO 25 ---------+
+      +--------+
+
+
+**Note**: For better performance and safety, consider adding pull-up resistors (typically 4.7kΩ) on the SDA and SCL lines if they are not included on your sensor module.
+
+---
+
+## Setup and Installation
+
+### 1. Install ESP-IDF
+
+Follow the official [ESP-IDF Getting Started Guide](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html) to set up the development environment on your operating system.
+
+### 2. Clone the Repository
 
 ```bash
-idf.py set-target <chip_name>
+git clone https://github.com/arthurmacedo01/variometer.git
+cd variometer
 ```
 
-### Hardware Required
+### 3. Configure the Project
 
-* A development board with ESP32/ESP32-C3/ESP32-C2/ESP32-H2/ESP-S3 SoC (e.g., ESP32-DevKitC, ESP-WROVER-KIT, etc.)
-* A USB cable for Power supply and programming
+Set up the project configuration using menuconfig:
 
-See [Development Boards](https://www.espressif.com/en/products/devkits) for more information about it.
-
-### Build and Flash
-
-Run `idf.py -p PORT flash monitor` to build, flash and monitor the project.
-
-(To exit the serial monitor, type ``Ctrl-]``.)
-
-See the [Getting Started Guide](https://idf.espressif.com/) for full steps to configure and use ESP-IDF to build projects.
-
-### Settings for UUID128
-
-This example works with UUID16 as default. To change to UUID128, follow this steps:
-
-1. Change the UUID16 to UUID128. You can change the UUID according to your needs.
-
-```c
-// Create a new UUID128 (using random values for this example)
-uint8_t gatts_service_uuid128_test_X[ESP_UUID_LEN_128] = {0x06, 0x18, 0x7a, 0xec, 0xbe, 0x11, 0x11, 0xea, 0x00, 0x16, 0x02, 0x42, 0x01, 0x13, 0x00, 0x04};
+```bash
+idf.py menuconfig
 ```
 
-By adding this new UUID128, you can remove the `#define` macros with the old UUID16.
+Ensure all settings are correct, especially the serial port and other hardware-specific configurations.
+### 4. Build the Project
 
-2. Add the new UUID128 to the profile.
+Compile the project using:
 
-```c
-// Change the size of the UUID from 16 to 128
-gl_profile_tab[PROFILE_X_APP_ID].service_id.id.uuid.len = ESP_UUID_LEN_128;
-// Copy the new UUID128 to the profile
-memcpy(gl_profile_tab[PROFILE_X_APP_ID].service_id.id.uuid.uuid.uuid128, gatts_service_uuid128_test_X, ESP_UUID_LEN_128);
+```bash
+idf.py build
 ```
 
-3. Remove the following line(s)
-```c
-gl_profile_tab[PROFILE_X_APP_ID].service_id.id.uuid.uuid.uuid16 = GATTS_SERVICE_UUID_TEST_X;
+### 5. Flash the Firmware
+
+Connect your ESP32 board to the computer and flash the compiled firmware:
+
+```bash
+idf.py flash
 ```
 
-## Example Output
+### 6. Monitor the Output
 
-```
-I (0) cpu_start: Starting scheduler on APP CPU.
-I (512) BTDM_INIT: BT controller compile version [1342a48]
-I (522) system_api: Base MAC address is not set
-I (522) system_api: read default base MAC address from EFUSE
-I (522) phy_init: phy_version 4670,719f9f6,Feb 18 2021,17:07:07
-I (922) GATTS_DEMO: REGISTER_APP_EVT, status 0, app_id 0
+After flashing, you can monitor the serial output:
 
-I (932) GATTS_DEMO: CREATE_SERVICE_EVT, status 0,  service_handle 40
-
-I (942) GATTS_DEMO: REGISTER_APP_EVT, status 0, app_id 1
-
-I (952) GATTS_DEMO: SERVICE_START_EVT, status 0, service_handle 40
-
-I (952) GATTS_DEMO: ADD_CHAR_EVT, status 0,  attr_handle 42, service_handle 40
-
-I (962) GATTS_DEMO: the gatts demo char length = 3
-
-I (962) GATTS_DEMO: prf_char[0] =11
-
-I (972) GATTS_DEMO: prf_char[1] =22
-
-I (972) GATTS_DEMO: prf_char[2] =33
-
-I (982) GATTS_DEMO: CREATE_SERVICE_EVT, status 0,  service_handle 44
-
-I (982) GATTS_DEMO: ADD_DESCR_EVT, status 0, attr_handle 43, service_handle 40
-
-I (992) GATTS_DEMO: SERVICE_START_EVT, status 0, service_handle 44
-
-I (1002) GATTS_DEMO: ADD_CHAR_EVT, status 0,  attr_handle 46, service_handle 44
-
-I (1012) GATTS_DEMO: ADD_DESCR_EVT, status 0, attr_handle 47, service_handle 44
-
+```bash
+idf.py monitor
 ```
 
-## Troubleshooting
+Press Ctrl+] to exit the monitor.
 
-For any technical queries, please open an [issue](https://github.com/espressif/esp-idf/issues) on GitHub. We will get back to you soon.
+### Kalman Filter Explanation
+
+The Kalman Filter is an efficient recursive filter that estimates the state of a dynamic system from a series of incomplete and noisy measurements. In this project, it is used to estimate:
+
+    Altitude (x1)
+    Vertical Velocity (x2)
+    Vertical Acceleration (x3)
+
+## Kalman Filter Steps
+
+    Prediction Step:
+        Predicts the next state (x_hat_pred) based on the previous state and a dynamic model.
+        Predicts the error covariance (P_pred) of the estimate.
+
+    Update Step:
+        Incorporates new measurements to correct the predicted state.
+        Calculates the Kalman Gain (K) which determines the weight given to the new measurements.
+        Updates the state estimate (x_hat) and error covariance (P).
+
+## Parameters
+
+    Sampling Time (T): Time interval between measurements (100 ms).
+    Process Noise Covariance (Q1, Q2, Q3): Represents the uncertainty in the model.
+    Measurement Noise Covariance (R): Represents the uncertainty in the measurements.
+    Initial Error Covariance (P11, P12, ..., P33): Represents the initial uncertainty in the state estimates.
+
+## Benefits
+
+    Noise Reduction: Provides smooth estimates by filtering out sensor noise.
+    Predictive Capability: Can predict future states, useful for proactive alerting.
+    Adaptive: Automatically adjusts estimates based on measurement accuracy.
+
+### Usage
+
+Once the system is set up and running:
+
+    Power On: Connect and power up the ESP32 board.
+    Monitoring: Use the serial monitor to observe real-time data, including current pressure, altitude, and estimated states.
+    Auditory Alerts:
+        Ascending: The buzzer emits higher-frequency sounds when ascending.
+        Descending: The buzzer emits lower-frequency sounds when descending.
+        Stationary: The buzzer remains silent or emits a baseline frequency within the defined dead band.
+
+## Configurable Parameters
+
+    DEAD_BAND: Threshold for minimal velocity below which the buzzer remains silent.
+    SENSIBILITY: Factor determining how much the buzzer frequency changes with velocity.
+    Sampling Time (T): Adjust for faster or slower
