@@ -13,20 +13,23 @@
 #define MAX_BLE_PAYLOAD_SIZE 20
 
 // // BLE service and characteristic UUIDs for Environmental Sensing Service (ESS)
-// static const uint8_t SERVICE_UUID[ESP_UUID_LEN_128] = {
-//     0xfb, 0x34, 0x9b, 0x5f, // fb349b5f
-//     0x80, 0x00, 0x00, 0x80, // 80000080
-//     0x00, 0x10, 0x00, 0x00, // 00100000
-//     0x1a, 0x18, 0x00, 0x00  // 181a0000
-// };
+#define SERVICE_UUID_LEN ESP_UUID_LEN_128
 
-// static const uint8_t CHARACTERISTIC_UUID[ESP_UUID_LEN_128] = {0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x6d, 0x2a, 0x00, 0x00};
+static const uint8_t SERVICE_UUID[ESP_UUID_LEN_128] = {
+    0xfb, 0x34, 0x9b, 0x5f, // fb349b5f
+    0x80, 0x00, 0x00, 0x80, // 80000080
+    0x00, 0x10, 0x00, 0x00, // 00100000
+    0x1a, 0x18, 0x00, 0x00  // 181a0000
+};
 
-#define SERVICE_UUID_LEN ESP_UUID_LEN_16
-static const uint8_t SERVICE_UUID[ESP_UUID_LEN_16] = {0xfb, 0x34};
+#define CHARACTERISTIC_UUID_LEN ESP_UUID_LEN_128
+static const uint8_t CHARACTERISTIC_UUID[ESP_UUID_LEN_128] = {0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x6d, 0x2a, 0x00, 0x00};
 
-#define CHARACTERISTIC_UUID_LEN ESP_UUID_LEN_16
-static const uint8_t CHARACTERISTIC_UUID[ESP_UUID_LEN_16] = {0xfb, 0x34};
+// #define SERVICE_UUID_LEN ESP_UUID_LEN_16
+// static const uint8_t SERVICE_UUID[ESP_UUID_LEN_16] = {0xfb, 0x34};
+
+// #define CHARACTERISTIC_UUID_LEN ESP_UUID_LEN_16
+// static const uint8_t CHARACTERISTIC_UUID[ESP_UUID_LEN_16] = {0xfb, 0x34};
 
 // Global variables for GATT interface and handles
 static esp_gatt_if_t gatts_if_global;
@@ -59,7 +62,7 @@ static esp_ble_adv_data_t adv_data = {
     .p_manufacturer_data = NULL,
     .service_data_len = 0,
     .p_service_data = NULL,
-    .service_uuid_len = 16,
+    .service_uuid_len = SERVICE_UUID_LEN,
     .p_service_uuid = NULL,
     .flag = (ESP_BLE_ADV_FLAG_GEN_DISC | ESP_BLE_ADV_FLAG_BREDR_NOT_SPT),
 };
@@ -217,29 +220,37 @@ void ble_send_lk8ex1(float pressure, float altitude, float vario, float temperat
         return;
     }
 
-    char pre_sentence[32];
-    char sentence[64];
+    // char pre_sentence[32];
+    // char sentence[64];
 
-    // Format the LK8EX1 sentence
-    snprintf(pre_sentence, sizeof(pre_sentence), "LK8EX1,%.0f,%.0f,%.0f,%.0f,%.0f,", pressure, altitude, vario * 100, temperature, battery);
+    // // // Format the LK8EX1 sentence
+    // // snprintf(pre_sentence, sizeof(pre_sentence), "LK8EX1,%.0f,%.0f,%.0f,%.0f,%.0f,", pressure, altitude, vario * 100, temperature, battery);
 
-    // Calculate checksum
-    uint8_t checksum = calculate_checksum(pre_sentence);
-    snprintf(sentence, sizeof(sentence), "$%s*%02X\r\n", pre_sentence, checksum);
+    // // // Calculate checksum
+    // // uint8_t checksum = calculate_checksum(pre_sentence);
+    // // snprintf(sentence, sizeof(sentence), "$%s*%02X\r\n", pre_sentence, checksum);
 
-    // // Send the sentence over BLE
-    // esp_err_t ret = esp_ble_gatts_send_indicate(gatts_if_global, 0, char_handle, strlen(sentence), (uint8_t *)sentence, false);
-    // if (ret != ESP_OK)
-    // {
-    //     ESP_LOGE(TAG, "Failed to send LK8EX1 sentence over BLE, error code = %x", ret);
-    // }
-    // else
-    // {
-    //     ESP_LOGI(TAG, "LK8EX1 sentence sent: %s", sentence);
-    // }
+    // // Format the LK8EX1 sentence
+    // snprintf(pre_sentence, sizeof(pre_sentence), "LK8EX1,%.0f,%.0f,%.0f,%.0f,%.0f,", pressure, altitude, vario * 100, temperature, battery);
 
-    // Send the sentence over BLE
-    size_t sentence_length = strlen(sentence);
+    // // Calculate checksum
+    // uint8_t checksum = calculate_checksum(pre_sentence);
+    // snprintf(sentence, sizeof(sentence), "$%s*%02X\r\n", pre_sentence, checksum);
+
+    // size_t sentence_length = strlen(sentence);
+
+    unsigned char sentence[4];
+
+    unsigned int int_pressure = (unsigned int)pressure; // This discards the decimal part
+    // Store the integer part of the pressure value into the sentence array, byte by byte
+    sentence[0] = int_pressure & 0xFF;         // 1st byte (Least Significant Byte)
+    sentence[1] = (int_pressure >> 8) & 0xFF;  // 2nd byte
+    sentence[2] = (int_pressure >> 16) & 0xFF; // 3rd byte
+    sentence[3] = (int_pressure >> 24) & 0xFF; // 4th byte (Most Significant Byte)    
+
+    size_t sentence_length = sizeof(sentence);
+
+
     size_t offset = 0;
 
     while (offset < sentence_length)
